@@ -54,15 +54,42 @@ public:
     */
     void readIndex()
     {
-      
+    ifstream indexFile;
+    indexFile.open(this->indexName, ios::in | ios::binary);
+    if (!indexFile.is_open())
+    {
+        // El archivo no existe todavía
+        return;
     }
+    while (!indexFile.eof())
+    {
+        string key;
+        long value;
+        indexFile.read((char*)&key, sizeof(string));
+        indexFile.read((char*)&value, sizeof(long));
+        this->index[key] = value;
+    }
+    indexFile.close();
+    }
+
 
     /*
     * Regresa el indice al disco
     */
-    void writeIndex(){
-        
+    void writeIndex()
+    {
+    ofstream indexFile;
+    indexFile.open(this->indexName, ios::out | ios::binary);
+    for (auto& entry : this->index)
+    {
+        string key = entry.first;
+        long value = entry.second;
+        indexFile.write((char*)&key, sizeof(string));
+        indexFile.write((char*)&value, sizeof(long));
     }
+    indexFile.close();
+    }   
+
 
     /*
     * Escribe el registro al final del archivo de datos. Se actualiza el indice. 
@@ -81,24 +108,59 @@ public:
     * Busca un registro que coincida con la key
     */
     Record* search(string key) {
-        Record* result = nullptr;
-                
-        return result;
+    Record* result = nullptr;
+    if (this->index.count(key) > 0)
+    {
+        // La clave existe en el índice, leemos el registro
+        long posFisica = this->index[key];
+        ifstream dataFile;
+        dataFile.open(this->fileName, ios::in | ios::binary);
+        dataFile.seekg(posFisica);
+        Record* record = new Record();
+        dataFile.read((char*)record, sizeof(Record));
+        dataFile.close();
+        result = record;
     }
+    return result;
+}
+
 
     /*
    * Muestra todos los registros de acuerdo como fueron insertados en el archivo de datos
    */
     void scanAll() {
-       
+    ifstream dataFile;
+    dataFile.open(this->fileName, ios::in | ios::binary);
+    while (!dataFile.eof())
+    {
+        Record record;
+        dataFile.read((char*)&record, sizeof(Record));
+        if (!dataFile.eof())
+        {
+            record.showData();
+        }
     }
+    dataFile.close();
+}
+
 
     /*
    * Muestra todos los registros de acuerdo a como estan ordenados en el indice
    */
-    void scanAllByIndex() {
-       
+    void scanAll() {
+    ifstream dataFile;
+    dataFile.open(this->fileName, ios::in | ios::binary);
+    while (!dataFile.eof())
+    {
+        Record record;
+        dataFile.read((char*)&record, sizeof(Record));
+        if (!dataFile.eof())
+        {
+            record.showData();
+        }
     }
+    dataFile.close();
+}
 
 };
 

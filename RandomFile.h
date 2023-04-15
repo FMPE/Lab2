@@ -1,6 +1,7 @@
 #include <iostream>
-#include<fstream>
-#include<cstdio>
+#include <fstream>
+#include <cstdio>
+#include <string>
 #include <map>
 using namespace std;
 
@@ -22,7 +23,7 @@ struct Record
     void showData() {
         cout << "\nNombre: " << nombre;
         cout << "\nCarrera: " << carrera;
-        cout << "\nCiclo : " << ciclo;
+        cout << "\nCiclo : " << ciclo << endl;
     }
 
     string getKey(){
@@ -52,44 +53,35 @@ public:
     /*
     * leer el indice desde disco
     */
-    void readIndex()
-    {
-    ifstream indexFile;
-    indexFile.open(this->indexName, ios::in | ios::binary);
-    if (!indexFile.is_open())
-    {
-        // El archivo no existe todavía
-        return;
+    void readIndex(){
+        ifstream indexFile;
+        indexFile.open(this->indexName, ios::in | ios::binary);
+        if (!indexFile.is_open()){
+            // El archivo no existe todavía
+            return;
+        }
+        while(!indexFile.eof()){
+            char key[30];
+            long val;
+            indexFile.read(key, 30);
+            indexFile.read((char*)&val, sizeof(long));
+            this->index[key] = val;
+        }
+        indexFile.close();
     }
-    while (!indexFile.eof())
-    {
-        string key;
-        long value;
-        indexFile.read((char*)&key, sizeof(string));
-        indexFile.read((char*)&value, sizeof(long));
-        this->index[key] = value;
-    }
-    indexFile.close();
-    }
-
 
     /*
     * Regresa el indice al disco
     */
-    void writeIndex()
-    {
-    ofstream indexFile;
-    indexFile.open(this->indexName, ios::out | ios::binary);
-    for (auto& entry : this->index)
-    {
-        string key = entry.first;
-        long value = entry.second;
-        indexFile.write((char*)&key, sizeof(string));
-        indexFile.write((char*)&value, sizeof(long));
+    void writeIndex(){
+        ofstream indexFile;
+        indexFile.open(this->indexName, ios::out | ios::binary);
+        for(auto& entry : this->index){
+            indexFile.write(entry.first.c_str(), 30);
+            indexFile.write((char*)&entry.second, sizeof(long));
+        }
+        indexFile.close();
     }
-    indexFile.close();
-    }   
-
 
     /*
     * Escribe el registro al final del archivo de datos. Se actualiza el indice. 
@@ -108,59 +100,58 @@ public:
     * Busca un registro que coincida con la key
     */
     Record* search(string key) {
-    Record* result = nullptr;
-    if (this->index.count(key) > 0)
-    {
-        // La clave existe en el índice, leemos el registro
-        long posFisica = this->index[key];
-        ifstream dataFile;
-        dataFile.open(this->fileName, ios::in | ios::binary);
-        dataFile.seekg(posFisica);
-        Record* record = new Record();
-        dataFile.read((char*)record, sizeof(Record));
-        dataFile.close();
-        result = record;
+        Record* result = nullptr;
+        
+        return result;
     }
-    return result;
-}
-
 
     /*
    * Muestra todos los registros de acuerdo como fueron insertados en el archivo de datos
    */
     void scanAll() {
-    ifstream dataFile;
-    dataFile.open(this->fileName, ios::in | ios::binary);
-    while (!dataFile.eof())
-    {
-        Record record;
-        dataFile.read((char*)&record, sizeof(Record));
-        if (!dataFile.eof())
-        {
-            record.showData();
+        ifstream dataFile;
+        dataFile.open(this->fileName, ios::in | ios::binary);
+        while (!dataFile.eof()){
+            Record record;
+            dataFile.read((char*)&record, sizeof(Record));
+            if (!dataFile.eof()){
+                record.showData();
+            }
         }
+        dataFile.close();
     }
-    dataFile.close();
-}
-
 
     /*
    * Muestra todos los registros de acuerdo a como estan ordenados en el indice
    */
-    void scanAll() {
-    ifstream dataFile;
-    dataFile.open(this->fileName, ios::in | ios::binary);
-    while (!dataFile.eof())
-    {
-        Record record;
-        dataFile.read((char*)&record, sizeof(Record));
-        if (!dataFile.eof())
-        {
+    void scanAllByIndex() {
+        //map<string, long> sortedIndex(this->index.begin(), this->index.end());
+        /*for (auto& entry : sortedIndex){
+            string key = entry.first;
+            long posFisica = entry.second;
+            ifstream dataFile;
+            dataFile.open(this->fileName, ios::in | ios::binary);
+            dataFile.seekg(posFisica);
+            Record record;
+            record.showData();
+            dataFile.read((char*)&record, sizeof(Record));
+            //while (!dataFile.eof()) {
+            //    record.showData();
+            //    dataFile.read((char*)&record, sizeof(Record));
+            //}
+            dataFile.close();
+        }*/
+        ifstream dataFile;
+        dataFile.open(this->fileName, ios::in | ios::binary);
+        for(auto& entry : this->index){
+            dataFile.seekg(entry.second); //nos posicionamos en la posición física guardada en el mapa
+            cout << entry.second <<endl;
+            Record record;
+            dataFile.read((char*)&record, sizeof(Record));
             record.showData();
         }
+        dataFile.close();
     }
-    dataFile.close();
-}
 
 };
 
